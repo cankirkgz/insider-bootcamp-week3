@@ -171,5 +171,3 @@ $(document).ready(function () {
     startApp();
   });
   
-
-  {}
