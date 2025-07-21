@@ -1,0 +1,822 @@
+/* eslint-disable */
+(($) => {
+    'use strict';
+
+    const classes = {
+        style: 'custom-style',
+        wrapper: 'custom-wrapper',
+        container: 'custom-container',
+        addToCartButton: 'add-to-cart-btn',
+        addToFavouritesButton: 'add-to-favourites-btn',
+        showDetailButton: 'show-detail-btn',
+        productImage: 'product-img',
+        cartButton: 'cart-btn',
+        closeCartPanelButton: 'close-cart-panel-btn',
+        clearCartButton: 'clear-cart-btn',
+        swiperWrapper: 'swiper-wrapper',
+        swiperButtonNext: 'swiper-button-next',
+        swiperButtonPrev: 'swiper-button-prev',
+        cartPanelHeader: 'cart-panel-header',
+        totalPriceContainer: 'total-price-container'
+        
+    };
+
+    const selectors = {
+        style: `.${ classes.style }`,
+        wrapper: `.${ classes.wrapper }`,
+        container: `.${ classes.container }`,
+        addToCartButton: `.${ classes.addToCartButton }`,
+        addToFavouritesButton: `.${ classes.addToFavouritesButton }`,
+        showDetailButton: `.${ classes.showDetailButton }`,
+        productImage: `.${ classes.productImage }`,
+        cartButton: `.${ classes.cartButton }`,
+        closeCartPanelButton: `.${ classes.closeCartPanelButton }`,
+        clearCartButton: `.${ classes.clearCartButton }`,
+        swiperWrapper: `.${ classes.swiperWrapper }`,
+        swiperButtonNext: `.${ classes.swiperButtonNext }`,
+        swiperButtonPrev: `.${ classes.swiperButtonPrev }`,
+        cartPanelHeader: `.${ classes.cartPanelHeader }`,
+        totalPriceContainer: `.${ classes.totalPriceContainer }`,
+        appendLocation: '#container' // Append location for the HTML - Don't change this.
+    };
+
+    const self = {};
+
+    self.init = () => {
+        self.reset();
+        self.buildCSS();
+        self.buildHTML();
+        self.setEvents();
+        self.loadCartFromStorage();
+        self.fetchProducts();
+    };
+
+    self.reset = () => {
+        $(selectors.style).remove();
+        $(selectors.wrapper).remove();
+        $(document).off('.eventListener');
+    };
+
+    self.buildCSS = () => {
+        $('head').append('<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />');
+
+        $(document).ready(() => {
+            if (window.lightbox) {
+                lightbox.option({
+                    'resizeDuration': 200,
+                    'fadeDuration': 300,
+                    'wrapAround': true
+                });
+            }
+        });
+
+        const customStyle = `
+            <style class="${ classes.style }">
+                #container {
+                    font-family: "Segoe UI", Tahoma, Geneva, Verdana, sans-serif;
+                    background: #f4f6f8;
+                    color: #333;
+                    padding: 0;
+                    margin: 0;
+                    min-height: 100vh;
+                    display: flex;
+                    flex-direction: column;
+                    align-items: center;
+                    justify-content: center;
+                }
+
+                h1 {
+                    font-weight: bold;
+                    font-size: xx-large;
+                    color: #2c3e50;
+                    margin-top: 30px;
+                    margin-bottom: 20px;
+                    text-align: center;
+                    text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.1);
+                }
+                                
+
+                form input {
+                    border: 1px solid #ccc;
+                    border-radius: 6px;
+                    padding: 10px 12px;
+                    width: 200px;
+                    transition: border-color 0.3s;
+                }
+
+                form input:hover {
+                    border-color: #3498db;
+                    outline: none;
+                }
+
+                form p {
+                    color: red;
+                    margin-top: 10px;
+                }
+            
+                ${ selectors.wrapper } {
+                    display: flex;
+                    flex-wrap: wrap;
+                    gap: 16px;
+                    justify-content: center;
+                    padding: 10px;
+                }
+
+                ${ selectors.container } {
+                    position: relative;
+                    display: flex;
+                    flex-direction: column;
+                    gap: 10px;
+                    align-items: center;
+                    justify-content: center;
+                    background-color: white;
+                    box-shadow: 0 4px 8px rgba(0,0,0,0.05);
+                    border-radius: 8px;
+                    width: 300px;
+                    height: 400px;
+                    padding: 10px;
+                }
+
+                ${ selectors.container }:hover {
+                    transform: translateY(-15px);
+                    transition: transform 0.15s ease-in;
+                }
+
+                ${ selectors.container } i {
+                    position: absolute;
+                    top: 10px;
+                    right: 10px;
+                }
+
+                ${ selectors.container } i:hover {
+                    transform: scale(1.1);
+                    transition: transform 0.2s ease-in-out;
+                }
+
+                ${ selectors.container } .price {
+                    text-align: left;
+                    width: 100%;
+                    font-style: italic;
+                }
+                    
+                ${ selectors.container } .title {
+                    font-weight: bold;
+                }
+
+                ${ classes.addToFavouritesButton } {
+                    font-size: 20px;
+                    color: #bbb;
+                    transition: color 0.3s;
+                }
+
+                .favourite-icon.active {
+                    color: red;
+                }
+
+                ${ selectors.addToCartButton },
+                ${ selectors.addToFavouritesButton }, 
+                ${ selectors.showDetailButton } {
+                    padding: 8px 16px;
+                    background-color: #3498db;
+                    color: #fff;
+                    border: none;
+                    border-radius: 4px;
+                    cursor: pointer;
+                }
+
+                ${ selectors.addToCartButton }:hover,
+                ${ selectors.addToFavouritesButton }:hover,
+                ${ selectors.showDetailButton }:hover {
+                    background-color: #2980b9;
+                }
+
+                .button-container {
+                    display: flex;
+                    gap: 10px;
+                    justify-content: center;
+                    width: 100%;
+                    position: absolute;
+                    bottom: 10px;
+                }
+
+                #product-modal {
+                    padding: 20px;
+                    background-color: white;
+                    border-radius: 8px;
+                    max-width: 500px;
+                    text-align: center;
+                }
+
+                #product-modal img {
+                    max-width: 100%;
+                    height: auto;
+                    border-radius: 6px;
+                    margin-bottom: 16px;
+                }
+
+                #modal-title {
+                    font-size: 20px;
+                    font-weight: bold;
+                    margin-bottom: 10px;
+                }
+
+                #modal-price {
+                    font-size: 18px;
+                    font-style: italic;
+                    color: #2ecc71;
+                    margin-bottom: 10px;
+                }
+
+                #modal-description {
+                    font-size: 15px;
+                    color: #444;
+                    text-align: left;
+                }
+
+                .jquery-modal.blocker {
+                    z-index: 9999 !important;
+                    backdrop-filter: blur(2px);
+                }
+
+                #modal-rating {
+                    font-size: 16px;
+                    font-weight: bold;
+                    color: #f1c40f;
+                    margin-bottom: 10px;
+                }
+
+                ${ selectors.cartButton } {
+                    display: flex;
+                    border-radius: 50%;
+                    position: fixed;
+                    bottom: 20px;
+                    right: 20px;
+                    background-color: white;
+                    width: 30px;
+                    height: 30px;
+                    justify-content: center;
+                    align-items: center;
+                    box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+                    cursor: pointer;
+                }
+
+                 #cart-panel {
+                    position: fixed;
+                    top: 0;
+                    right: -350px;
+                    width: 300px;
+                    height: 100%;
+                    background-color: white;
+                    box-shadow: -2px 0 8px rgba(0,0,0,0.2);
+                    z-index: 999;
+                    padding: 20px;
+                    transition: right 0.3s ease-in-out;
+                    overflow-y: auto;
+                }
+
+                #cart-panel.open {
+                    right: 0;
+                }
+
+                #cart-panel h2 {
+                    mamrgin-top: 0;
+                }
+
+                #clear_cart {
+                    margin-top: 20px;
+                    padding: 10px;
+                    width: 100%;
+                    background-color: crimson;
+                    color: white;
+                    border: none;
+                    border-radius: 4px;
+                    cursor: pointer;
+                }
+
+                .cart-item img {
+                    margin-right: 10px;
+                    padding: 5px;
+                    border-radius: 5px;
+                    width: 50px;
+                    height: 50px;
+                    object-fit: contain;
+                    border: 1px solid #ccc;
+                }
+
+                .cart-item {
+                    display: flex;
+                    align-items: center;
+                    justify-content: space-between;
+                    background-color: #fff;
+                    margin: 10px 0;
+                    padding: 10px;
+                    border-radius: 8px;
+                    box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+                }
+
+                .cart-item-details {
+                    display: flex;
+                    flex-direction: column;
+                    font-size: 14px;
+                    color: #333;
+                    max-width: 200px;
+                }
+
+                .cart-item-details .cart-item-title {
+                    font-weight: bold;
+                    margin-bottom: 4px;
+                    line-height: 1.2;
+                }
+
+                .cart-item-details .cart-item-price {
+                    color: #888;
+                    font-size: 13px;
+                }
+
+                ${ selectors.cartPanelHeader }  {
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                }
+
+                .cart-item .remove-item {
+                    right: 0px;
+                    font-size: 16px;
+                    color: #e74c3c;
+                    cursor: pointer;
+                    padding: 4px;
+                    margin-left: 10px;
+                    transition: transform 0.2s ease-in-out;
+                }
+
+                .cart-item .remove-item:hover {
+                    transform: scale(1.2);
+                }  
+
+                ${ classes.totalPriceContainer } {
+                    display: flex;
+                }  
+
+                #total-price {
+                    margin-right: 5px;
+                }  
+
+                #favourite-section {
+                    width: 100%;
+                    max-width: 1000px;
+                    padding: 20px;
+                }
+                
+                #favourite-section h2 {
+                    font-size: 22px;
+                    color: #2c3e50;
+                    margin-bottom: 10px;
+                }
+                
+                .swiper {
+                    width: 100%;
+                    padding-bottom: 10px;
+                }
+                
+                .swiper-slide {
+                    background: white;
+                    border: 1px solid #eee;
+                    border-radius: 8px;
+                    padding: 10px;
+                    text-align: center;
+                    width: 200px !important;
+                    display: flex;
+                    flex-direction: column;
+                    align-items: center;
+                    justify-content: center;
+                    box-shadow: 0 4px 6px rgba(0,0,0,0.05);
+                }
+                
+                .swiper-slide img {
+                    width: 60px;
+                    height: 60px;
+                    object-fit: contain;
+                    margin-bottom: 8px;
+                }
+
+                ${ selectors.swipperButtonNext },
+                ${ selectors.swipperButtonPrev } {
+                    color: #3498db;
+                }
+
+            </style>
+        `;
+        $('head').append(customStyle);
+        $('head').append(`<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/lightbox2/2.11.4/css/lightbox.min.css">`);
+        $('head').append(`<script src="https://cdnjs.cloudflare.com/ajax/libs/lightbox2/2.11.4/js/lightbox.min.js"></script>`);
+        $('head').append('<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jquery-modal/0.9.1/jquery.modal.min.css" />');
+        $('head').append('<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery-modal/0.9.1/jquery.modal.min.js"></script>');
+        $('head').append(`<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css" />`);
+        $('head').append(`<script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>`);
+    };
+
+    self.buildHTML = () => {
+        const html = `
+        
+            <h1>Mini E-Ticaret Sitesi</h1>
+            <form id="search-form">
+                <input type="number" min="1" placeholder="Ürün id giriniz"></input>
+                <p></p>
+            </form>
+            <div id="favourite-section">
+                <h2>Favori Ürünler</h2>
+                <div class="swiper mySwiper">
+                    <div class="${ classes.swiperWrapper }" id="favourite-wrapper"></div>
+                    <div class="${ classes.swiperButtonNext }"></div>
+                    <div class="${ classes.swiperButtonPrev }"></div>
+                </div>
+            </div>
+
+            <div class="${ classes.wrapper }"></div>
+            <div id="product-modal" class="modal"></div>
+            <div id="cart-button" class="${ classes.cartButton }">🛒</div>
+            <div id="cart-panel">
+                <div class="${ classes.cartPanelHeader }">
+                    <h2>Sepet</h2>
+                    <i class="fa-solid fa-xmark remove-item ${ classes.closeCartPanelButton }"></i>
+                </div>
+                <div id="cart-items"></div>
+                <div class="${ classes.totalPriceContainer }">
+                    <p id="total-price">0</p>
+                    <p id="total-price"> TL</p>
+                </div>
+                <button id="clear_cart" class="${ classes.clearCartButton }">Sepeti Temizle</button>
+            </div>
+        `;
+        $(selectors.appendLocation).append(html);
+    };
+
+    // Event listeners
+    self.setEvents = () => {
+        $(document).on('click.eventListener', selectors.addToCartButton, function () {
+            const $card = $(this).closest(selectors.container);
+            const $img = $card.find('img');
+            const offSet = $img.offset();
+            const productId = $card.data('id');
+            const productTitle = $card.find('.title').text();
+            const productPrice = $card.find('.price').text();
+            const productImage = $card.find('img').attr('src');
+            const $existingItem = $(`#cart-items .cart-item[data-id="${productId}"]`);
+            const prevTotalPrice = parseFloat($('#total-price').text());
+            const newPrice = parseFloat(productPrice);
+
+            console.log($existingItem);
+            if ($existingItem.length) {
+                const $countSpan = $existingItem.find('.item-count');
+                const currentCount = parseInt($countSpan.text());
+                $countSpan.text(currentCount + 1);
+            } else {
+                const $clone = $img.clone().css({
+                    position: 'absolute',
+                    top: offSet.top,
+                    left: offSet.left,
+                    width: $img.width(),
+                    height: $img.height(),
+                    zIndex: 1000,
+                    borderRadius: '8px',
+                    boxShadow: '0 0 10px rgba(0,0,0,0.3)',
+                    pointerEvents: 'none'
+                }).appendTo('body');
+    
+                const cartOffset =  $('#cart-button').offset();
+    
+                $clone.animate({
+                    top: cartOffset.top,
+                    left: cartOffset.left,
+                    width: 20,
+                    height: 20,
+                    opacity: 0.5,
+                }, 800, function() {
+                    $clone.remove();
+                })
+    
+                const itemHtml = `
+                    <div class="cart-item" data-id="${productId}">
+                        <img src="${productImage}" width="40">
+                        <div class="cart-item-details">
+                            <span style="font-weight: bold;" class="cart-item-title">${productTitle}</span>
+                            <span class="cart-item-price">${productPrice}</span>
+                            <span class="item-count">1</span> adet
+                        </div>
+                        <i class="fa-solid fa-xmark remove-item"></i>
+                    </div>
+                `;
+    
+                $('#cart-items').append(itemHtml);
+    
+    
+            }
+            $('#total-price').text(prevTotalPrice + newPrice);
+            self.updateStorageCart(productId, productTitle, productPrice, productImage);
+
+        });
+
+        $(document).on('click.eventListener', selectors.showDetailButton, function() {
+            const $card = $(this).closest(selectors.container);
+            const productId = $card.data('id');
+            console.log("Detay butonuna tıklanıldı " + productId);
+
+            $.ajax({
+                url: `https://fakestoreapi.com/products/${productId}`,
+                method: 'GET',
+            }).done(function(response) {
+                const html = `
+                    <img id="modal-image" src="${response.image}"> 
+                    <h2 id="modal-title">${response.title}</h2>
+                    <p id="modal-price">${response.price}</p>
+                    <p id="modal-rating">
+                        ⭐ ${response.rating.rate} / 5 
+                        <span style="color:#888;">(${response.rating.count} oy)</span>
+                    </p>
+                    <p id="modal-description">${response.description}</p>
+                `;
+                console.log(html)
+                $('#product-modal').html(html).modal({ fadeDuration: 200 });
+
+            }).fail(function(error) {
+                console.log("Bir sorun oluştu: " + error)
+            });
+        });
+
+        $(document).on('click.eventListener', selectors.cartButton, function () {
+            $('#cart-panel').toggleClass('open');
+        });
+
+        $(document).on('click.eventListener', selectors.closeCartPanelButton, function() {
+            $('#cart-panel').toggleClass('open');
+        });
+
+        $(document).on('click.eventListener', '.remove-item', function() {
+            self.setCartStorage();
+            const $item = $(this).closest('.cart-item');
+            const price = parseFloat($item.find('.cart-item-price').text());
+            const count = parseInt($item.find('.item-count').text());
+            const totalToRemove = price * count;
+
+            const currentTotal = parseFloat($('#total-price').text());
+            const newTotal = Math.max(currentTotal - totalToRemove, 0);
+
+            $('#total-price').text(newTotal.toFixed(2));
+            $item.remove();
+
+
+            self.setCartStorage();
+        });
+
+        $(document).on('click.eventListener', selectors.clearCartButton, function() {
+            $(this).siblings('#cart-items').remove();
+            $('#cart-panel').toggleClass('open');
+            $('#total-price').text('0');
+            localStorage.removeItem('cartItems');
+        });
+
+        $('#search-form input').debouncedInput(function(value){
+            const trimmed = value.trim();
+
+            if(trimmed === '') {
+                self.fetchProducts();
+            } else {
+                self.searchProduct(trimmed);
+            }
+        });
+        // Favorite cart event, etc.
+    };
+    {}
+
+    self.searchProduct = (value) => {
+        const id = Number(value);
+        if (!Number.isInteger(id) || id < 0) return;
+
+        $(selectors.wrapper).empty();
+
+        $.ajax({
+            url: `https://fakestoreapi.com/products/${id}`,
+            method: 'GET',
+        }).done(function(product) {
+            const productHTML = self.buildProductHTML(product);
+            $(selectors.wrapper).append(productHTML);
+            $(selectors.addToFavouritesButton).toggleFavouritePlugin();
+            self.loadFavoritesFromStorage();
+            $('#search-form p').text("");
+        }).fail(function(error) {
+            $('#search-form p').text("Ürün bulunamadı");
+        });
+    }
+
+    self.buildProductHTML = (product) => {
+        return `
+            <div class="${ classes.container }" data-id="${product.id}">
+                <i class="fa-regular fa-heart ${ classes.addToFavouritesButton }" data-id="${product.id}"></i>
+                <a href="${ product.image }" data-lightbox="product-${ product.id }">
+                    <img class="${ classes.productImage }" src="${ product.image }" width="100">
+                </a>
+                <p class="title">${ product.title }</p>
+                <p class="price">${ product.price }</p>
+                <div class="button-container">
+                    <button class="${ classes.addToCartButton }">Sepete Ekle</button>
+                    <button class="${ classes.showDetailButton }">Detay Göster</button>
+                </div>
+            </div>
+        `;
+    };
+
+    self.fetchProducts = () => {
+        $(selectors.wrapper).empty();
+        $.ajax({
+            url: `https://fakestoreapi.com/products`,
+            method: 'GET',
+        }).done(function(response) {
+
+            response.forEach(product => {
+                const html = ` 
+                    <div class="${ classes.container }" data-id="${product.id}">
+                        <i class="fa-regular fa-heart ${ classes.addToFavouritesButton }" data-id="${product.id}"></i>
+                        <a href="${ product.image }" data-lightbox="product-${ product.id }">
+                            <img class="${ classes.productImage }" src="${ product.image }" width="100">
+                        </a>
+                        <p class="title">${ product.title }</p>
+                        <p class="price">${ product.price }</p>
+                        <div class="button-container">
+                            <button class="${ classes.addToCartButton }">Sepete Ekle</button>
+                            <button class="${ classes.showDetailButton }">Detay Göster</button>
+                        </div>
+                    </div>
+                `;
+
+                $(selectors.wrapper).append(html);
+            });
+            $(selectors.addToFavouritesButton).toggleFavouritePlugin();
+            $('#search-form p').text("");
+            self.loadFavoritesFromStorage();
+        }).fail(function(error) {
+            alert("Bir hata oluştu: " + error);
+        });
+    };
+
+    // Extra functions (localStorage, api requests, etc.)
+    self.setCartStorage = () => {
+        let updatedCart = [];
+
+        $('#cart-items .cart-item').each(function() {
+            const $item = $(this);
+            updatedCart.push({
+                id: parseInt($item.data('id')),
+                title: $item.find('.cart-item-title').text(),
+                price: parseFloat($item.find('.cart-item-price').text()),
+                image: $item.find('img').attr('src'),
+                count: parseInt($item.find('.item-count').text())
+            });
+        });
+        localStorage.setItem('cartItems', JSON.stringify(updatedCart));
+    };
+
+    self.updateStorageFavourite = (favouriteItem) => {
+        let favouriteItems = JSON.parse(localStorage.getItem('favouriteItems')) || [];
+
+        const id = favouriteItem.data('id');
+        const existingIndex = favouriteItems.findIndex(item => item.id === id);
+
+        if (existingIndex !== -1) {
+            favouriteItems.splice(existingIndex-1);
+        } else {
+            favouriteItems.push({
+                id: id
+            });
+        }
+        localStorage.setItem('favouriteItems', JSON.stringify(favouriteItems));
+    }
+
+    self.loadFavoritesFromStorage = () => {
+        const favouriteItems = JSON.parse(localStorage.getItem('favouriteItems')) || [];
+    
+        $(selectors.addToFavouritesButton).each(function() {
+            const id = parseInt($(this).data('id'));
+            if (favouriteItems.some(item => item.id === id)) {
+                $(this).removeClass('fa-regular').addClass('fa-solid active');
+            }
+        });
+    
+        $('#favourite-wrapper').empty();
+        if (favouriteItems.length === 0) return;
+    
+        const productFetches = favouriteItems.map(item =>
+            $.get(`https://fakestoreapi.com/products/${item.id}`)
+        );
+    
+        Promise.all(productFetches).then(products => {
+            products.forEach(product => {
+                const html = `
+                    <div class="swiper-slide">
+                        <img src="${product.image}" alt="">
+                        <p style="font-weight: bold; font-size: 14px;">${product.title.slice(0, 20)}...</p>
+                        <p style="color: #2ecc71;">${product.price} TL</p>
+                    </div>
+                `;
+                $('#favourite-wrapper').append(html);
+            });
+    
+            new Swiper(".mySwiper", {
+                slidesPerView: Math.min(3, favouriteItems.length),
+                spaceBetween: 10,
+                loop: favouriteItems.length > 3,
+                autoplay: false,
+                navigation: {
+                    nextEl: ".swiper-button-next",
+                    prevEl: ".swiper-button-prev"
+                },
+            });
+            
+        });
+    };
+    
+
+    self.updateStorageCart = (id, title, price, image) => {
+        let cartItems = JSON.parse(localStorage.getItem('cartItems')) || [];
+
+        const existingIndex = cartItems.findIndex(item => item.id === id);
+
+        if (existingIndex !== -1) {
+            cartItems[existingIndex].count += 1;
+        } else {
+            cartItems.push({
+                id, 
+                title,
+                price: parseFloat(price),
+                image,
+                count: 1
+            });
+        }
+        localStorage.setItem('cartItems', JSON.stringify(cartItems));
+ 
+    }
+
+    self.loadCartFromStorage = () => {
+        const cartItems = JSON.parse(localStorage.getItem('cartItems')) || [];
+
+        let total = 0;
+
+        cartItems.forEach(item => {
+            const itemHtml = `
+                <div class="cart-item" data-id="${item.id}">
+                    <img src="${item.image}" width="40">
+                    <div class="cart-item-details">
+                        <span class="cart-item-title" style="font-weight: bold;">${item.title}</span>
+                        <span class="cart-item-price">${item.price}</span>
+                        <span class="item-count">${item.count}</span> adet
+                    </div>
+                    <i class="fa-solid fa-xmark remove-item"></i>
+                </div>
+            `;
+
+            $('#cart-items').append(itemHtml);
+            total += item.price * item.count;
+        });
+        $('#total-price').text(total.toFixed(2));
+    }
+
+    $.fn.toggleFavouritePlugin = function(storageKey = 'favouriteItems'){
+        return this.each(function(){
+            const $btn = $(this);
+            const id = parseInt($btn.data('id'));
+
+            $btn.on('click', function(){
+                let favourites = JSON.parse(localStorage.getItem(storageKey)) || [];
+                const index = favourites.findIndex(item => item.id === id);
+
+                if (index !== -1) {
+                    favourites.splice(index, 1);
+                    $btn.removeClass('fa-solid active').addClass('fa-regular');
+                } else {
+                    favourites.push({id});
+                    $btn.removeClass('fa-regular').addClass('fa-solid active');
+                }
+
+                localStorage.setItem(storageKey, JSON.stringify(favourites));
+                self.loadFavoritesFromStorage();
+            });
+        });
+    } 
+
+    $.fn.debouncedInput = function(callback, delay = 500) {
+        let timer;
+
+        return this.each(function(){
+            const $el = $(this);
+
+            $el.on('input', function() {
+                clearTimeout(timer);
+                timer = setTimeout(() => {
+                    const value = $el.val();
+                    callback(value);
+                }, delay);
+            });
+        });
+    }
+
+    $(document).ready(self.init);
+})(jQuery);
